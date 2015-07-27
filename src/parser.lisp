@@ -300,6 +300,20 @@ us a never-ending header that the application keeps buffering.")
               (advance-to* next)
               (callback-data :header-field http callbacks data field-start field-end)
               (callback-data :header-value http callbacks data value-start value-end))))
+          ("upgrade-insecure-requests"
+           ;; skip until field end
+           (do ((char (svref +tokens+ (current))
+                      (svref +tokens+ (current))))
+               ((= (current) (char-code #\:)))
+             (declare (type character char))
+             (when (char= char #\Nul)
+               (error 'invalid-header-token))
+             (advance))
+
+           (setq field-end (pos))
+           (skip-until-value-start-and
+            (advance-to*
+             (parse-header-value http callbacks data (pos) end field-start field-end))))
           ("upgrade"
            (setq field-end (pos))
            (setf (http-upgrade-p http) T)
